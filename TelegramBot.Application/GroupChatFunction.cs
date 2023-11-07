@@ -73,7 +73,7 @@ public class GroupChatFunction : IGroupChatFunction
         var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
 
         if (data["Group"] == groupId.ToString())
-            data["Group"] = String.Empty;
+            data["Group"] = "0";
 
         json = JsonConvert.SerializeObject(data, Formatting.Indented);
         await File.WriteAllTextAsync(filePath, json);

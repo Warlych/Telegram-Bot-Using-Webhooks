@@ -45,7 +45,7 @@ public class PrivateChatFunction : IPrivateChatFunction
         // will be function description
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
-            text: "",
+            text: ")",
             cancellationToken: cancellationToken);
     }
 
@@ -53,7 +53,7 @@ public class PrivateChatFunction : IPrivateChatFunction
     {
         var groupId = await GetGroupId();
         
-        if (groupId.ToString() == String.Empty)
+        if (groupId.Equals(0))
         {
             await _client.SendTextMessageAsync(chatId: message.Chat,
                 text: "It's not possible to ask a question at this time. Try later.",
