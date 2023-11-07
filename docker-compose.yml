@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+  bot:
+    depends_on:
+      - postgres_db
+    container_name: bot
+    image: bot:latest
+    build:
+      dockerfile: ./TelegramBot/Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - default
+    environment:
+      DbConnection: "Host=postgres_db;Port=5432;Database=BotDb;Username=postgres;Password=postgres"
+      TelegramBot__WebhookURL: "https://3ad3-51-159-211-100.ngrok-free.app"
+      TelegramBot__BotRoute: "bot"
+      ASPNETCORE_ENVIRONMENT: Development
+    restart: unless-stopped
+    volumes:
+      - $APPDATA/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+    
+  postgres_db:
+    container_name: PostgreSql
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    networks:
+      - default
+volumes:
+  data: 

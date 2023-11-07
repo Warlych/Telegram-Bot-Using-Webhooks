@@ -1,20 +1,22 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
 EXPOSE 80
-EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["TelegramBot/TelegramBot.csproj", "TelegramBot/"]
-RUN dotnet restore "TelegramBot/TelegramBot.csproj"
-COPY . .
-WORKDIR "/src/TelegramBot"
-RUN dotnet build "TelegramBot.csproj" -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish "TelegramBot.csproj" -c Release -o /app/publish /p:UseAppHost=false
+COPY ./TelegramBot.Infrastructure/TelegramBot.Infrastructure.csproj ./TelegramBot.Infrastructure/
+COPY ./TelegramBot.Application/TelegramBot.Application.csproj ./TelegramBot.Application/
+COPY ./TelegramBot/TelegramBot.csproj ./TelegramBot/
+COPY ./TelegramBot.sln ./
 
-FROM base AS final
+RUN dotnet restore
+
+COPY . ./
+WORKDIR /src/TelegramBot
+RUN dotnet build -c Release -o /app/build
+
+FROM base AS runtime
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/build ./
 ENTRYPOINT ["dotnet", "TelegramBot.dll"]
