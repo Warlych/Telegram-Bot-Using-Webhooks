@@ -1,6 +1,8 @@
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using TelegramBot.Application.Interfaces;
 using TelegramBot.Infrastructure.Domain;
 using TelegramBot.Infrastructure.Interfaces;
 
@@ -10,10 +12,19 @@ public class UpdateHandlers
 {
     private readonly ITelegramBotClient _client;
     private readonly IDataContext _context;
-    public UpdateHandlers(ITelegramBotClient client, IDataContext context)
+
+    private readonly IPrivateChatFunction _privateChatFunction;
+    private readonly IGroupChatFunction _groupChatFunction;
+    
+    public UpdateHandlers(ITelegramBotClient client, 
+        IDataContext context, 
+        IPrivateChatFunction privateChatFunction, 
+        IGroupChatFunction groupChatFunction)
     {
         _client = client;
         _context = context;
+        _privateChatFunction = privateChatFunction;
+        _groupChatFunction = groupChatFunction;
     }
     
     public Task HandleErrorAsync(Exception exception, CancellationToken cancellationToken)
@@ -42,5 +53,48 @@ public class UpdateHandlers
 
         await _context.Activities.AddAsync(activity, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+        
+        var handler = update switch
+        {
+            { Message: { Chat.Type: ChatType.Private } message } => BotOnPrivateMessageReceiving(message,
+                cancellationToken),
+            { Message: { Chat.Type: ChatType.Group or ChatType.Supergroup } message } => BotOnGroupMessageReceiving(
+                message, cancellationToken),
+            _ => UnknownUpdate(update, cancellationToken)
+        };
     }
+    
+    private async Task BotOnPrivateMessageReceiving(Message message, CancellationToken cancellationToken)
+    {
+        var func = message switch
+        {
+            { Text: "/start" } => _privateChatFunction.Begin(message, cancellationToken),
+            { Text: "/help" } => _privateChatFunction.Help(message, cancellationToken),
+            { Text: "/ask" } => _privateChatFunction.Ask(message, cancellationToken),
+            { ReplyToMessage.Text: not null } => _privateChatFunction.ReplyToBotMessage(message, cancellationToken),
+            _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
+        };
+        
+        await func;
+    }
+
+    private async Task BotOnGroupMessageReceiving(Message message, CancellationToken cancellationToken)
+    {
+        var func = message switch
+        {
+            { Text: "/start" } => _groupChatFunction.Begin(message, cancellationToken),
+            { Text: "/help" } => _groupChatFunction.Help(message, cancellationToken),
+            { Text: "/set_group" } => _groupChatFunction.SetGroup(message, cancellationToken),
+            { Text: "/unset_group" } => _groupChatFunction.UnsetGroup(message, cancellationToken),
+            _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
+        };
+
+        await func;
+    }
+
+    private Task UnknownUpdate(Update update, CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
 }

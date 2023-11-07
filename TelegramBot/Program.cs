@@ -1,4 +1,5 @@
 using Telegram.Bot;
+using TelegramBot.Application.DependencyInjection;
 using TelegramBot.Controllers;
 using TelegramBot.Infrastructure.DependencyInjection;
 using TelegramBot.Services;
@@ -14,6 +15,7 @@ builder.Services.AddHttpClient("telegram_bot_client")
         return new TelegramBotClient(options, httpClient);
     });
 
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<UpdateHandlers>();
 

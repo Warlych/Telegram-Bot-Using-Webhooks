@@ -7,8 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\TelegramBot.Infrastructure\TelegramBot.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0-preview.4.23259.3" />
-      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0-preview.4" />
       <PackageReference Include="Telegram.Bot" Version="20.0.0-alpha.1" />
     </ItemGroup>
 
