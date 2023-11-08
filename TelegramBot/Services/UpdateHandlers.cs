@@ -62,6 +62,8 @@ public class UpdateHandlers
                 message, cancellationToken),
             _ => UnknownUpdate(update, cancellationToken)
         };
+
+        await handler;
     }
     
     private async Task BotOnPrivateMessageReceiving(Message message, CancellationToken cancellationToken)
