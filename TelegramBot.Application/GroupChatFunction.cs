@@ -19,7 +19,7 @@ public class GroupChatFunction : IGroupChatFunction
         _context = context;
     }
     
-    public async Task Begin(Message message, CancellationToken cancellationToken)
+    public async Task BeginAsync(Message message, CancellationToken cancellationToken)
     {
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
@@ -37,7 +37,7 @@ public class GroupChatFunction : IGroupChatFunction
         
     }
 
-    public async Task Help(Message message, CancellationToken cancellationToken)
+    public async Task HelpAsync(Message message, CancellationToken cancellationToken)
     {
         // will be function description
         await _client.SendTextMessageAsync(
@@ -46,7 +46,7 @@ public class GroupChatFunction : IGroupChatFunction
             cancellationToken: cancellationToken);
     }
 
-    public async Task SetGroup(Message message, CancellationToken cancellationToken)
+    public async Task SetGroupAsync(Message message, CancellationToken cancellationToken)
     {
         var groupId = message.Chat.Id;
 
@@ -62,7 +62,7 @@ public class GroupChatFunction : IGroupChatFunction
         await _client.SendTextMessageAsync(message.Chat, "Group was set");
     }
 
-    public async Task UnsetGroup(Message message, CancellationToken cancellationToken)
+    public async Task UnsetGroupAsync(Message message, CancellationToken cancellationToken)
     {
         var groupId = message.Chat.Id;
 

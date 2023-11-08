@@ -68,10 +68,10 @@ public class UpdateHandlers
     {
         var func = message switch
         {
-            { Text: "/start" } => _privateChatFunction.Begin(message, cancellationToken),
-            { Text: "/help" } => _privateChatFunction.Help(message, cancellationToken),
-            { Text: "/ask" } => _privateChatFunction.Ask(message, cancellationToken),
-            { ReplyToMessage.Text: not null } => _privateChatFunction.ReplyToBotMessage(message, cancellationToken),
+            { Text: "/start" } => _privateChatFunction.BeginAsync(message, cancellationToken),
+            { Text: "/help" } => _privateChatFunction.HelpAsync(message, cancellationToken),
+            { Text: "/ask" } => _privateChatFunction.AskAsync(message, cancellationToken),
+            { ReplyToMessage.Text: not null } => _privateChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
         
@@ -82,10 +82,10 @@ public class UpdateHandlers
     {
         var func = message switch
         {
-            { Text: "/start" } => _groupChatFunction.Begin(message, cancellationToken),
-            { Text: "/help" } => _groupChatFunction.Help(message, cancellationToken),
-            { Text: "/set_group" } => _groupChatFunction.SetGroup(message, cancellationToken),
-            { Text: "/unset_group" } => _groupChatFunction.UnsetGroup(message, cancellationToken),
+            { Text: "/start" } => _groupChatFunction.BeginAsync(message, cancellationToken),
+            { Text: "/help" } => _groupChatFunction.HelpAsync(message, cancellationToken),
+            { Text: "/set_group" } => _groupChatFunction.SetGroupAsync(message, cancellationToken),
+            { Text: "/unset_group" } => _groupChatFunction.UnsetGroupAsync(message, cancellationToken),
             _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
 

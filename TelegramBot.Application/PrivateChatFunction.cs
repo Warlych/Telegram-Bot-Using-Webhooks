@@ -12,14 +12,14 @@ public class PrivateChatFunction : IPrivateChatFunction
 {
     private readonly ITelegramBotClient _client;
     private readonly IDataContext _context;
-    
+
     public PrivateChatFunction(ITelegramBotClient client, IDataContext context)
     {
         _client = client;
         _context = context;
     }
-    
-    public async Task Begin(Message message, CancellationToken cancellationToken)
+
+    public async Task BeginAsync(Message message, CancellationToken cancellationToken)
     {
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
@@ -40,28 +40,28 @@ public class PrivateChatFunction : IPrivateChatFunction
 
     }
 
-    public async Task Help(Message message, CancellationToken cancellationToken)
+    public async Task HelpAsync(Message message, CancellationToken cancellationToken)
     {
         // will be function description
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
-            text: ")",
+            text: "",
             cancellationToken: cancellationToken);
     }
 
-    public async Task Ask(Message message, CancellationToken cancellationToken)
+    public async Task AskAsync(Message message, CancellationToken cancellationToken)
     {
-        var groupId = await GetGroupId();
-        
+        var groupId = await GetGroupIdAsync();
+
         if (groupId.Equals(0))
         {
             await _client.SendTextMessageAsync(chatId: message.Chat,
                 text: "It's not possible to ask a question at this time. Try later.",
                 cancellationToken: cancellationToken);
-            
+
             return;
         }
-        
+
         var replyMarkup = new ForceReplyMarkup() { Selective = true };
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
@@ -70,12 +70,12 @@ public class PrivateChatFunction : IPrivateChatFunction
             cancellationToken: cancellationToken);
     }
 
-    public Task ReplyToBotMessage(Message message, CancellationToken cancellationToken)
+    public Task ReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
     
-    private async Task<long> GetGroupId()
+    private async Task<long> GetGroupIdAsync()
     {
         var filePath = Environment.CurrentDirectory + "/Properties/userSettings.json";
 

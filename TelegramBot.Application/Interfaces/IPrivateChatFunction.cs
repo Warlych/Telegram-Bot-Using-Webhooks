@@ -4,8 +4,8 @@ namespace TelegramBot.Application.Interfaces;
 
 public interface IPrivateChatFunction
 {
-    Task Begin(Message message, CancellationToken cancellationToken);
-    Task Help(Message message, CancellationToken cancellationToken);
-    Task Ask(Message message, CancellationToken cancellationToken);
-    Task ReplyToBotMessage(Message message, CancellationToken cancellationToken);
+    Task BeginAsync(Message message, CancellationToken cancellationToken);
+    Task HelpAsync(Message message, CancellationToken cancellationToken);
+    Task AskAsync(Message message, CancellationToken cancellationToken);
+    Task ReplyToBotMessageAsync(Message message, CancellationToken cancellationToken);
 }
