@@ -53,12 +53,12 @@ public class UpdateHandlers
 
         await _context.Activities.AddAsync(activity, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
-        
+      
         var handler = update switch
         {
             { Message: { Chat.Type: ChatType.Private } message } => BotOnPrivateMessageReceiving(message,
                 cancellationToken),
-            { Message: { Chat.Type: ChatType.Group or ChatType.Supergroup } message } => BotOnGroupMessageReceiving(
+            { Message: { Chat.Type: ChatType.Group or ChatType.Supergroup } message} => BotOnGroupMessageReceiving(
                 message, cancellationToken),
             _ => UnknownUpdate(update, cancellationToken)
         };
@@ -88,6 +88,8 @@ public class UpdateHandlers
             { Text: "/help" } => _groupChatFunction.HelpAsync(message, cancellationToken),
             { Text: "/set_group" } => _groupChatFunction.SetGroupAsync(message, cancellationToken),
             { Text: "/unset_group" } => _groupChatFunction.UnsetGroupAsync(message, cancellationToken),
+            { Text: "/send"} and {IsTopicMessage: true} => _groupChatFunction.SendingResponseAsync(message, cancellationToken),
+            { ReplyToMessage.Text: not null } => _groupChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
 
