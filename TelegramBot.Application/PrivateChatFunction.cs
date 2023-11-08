@@ -1,8 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBot.Application.Interfaces;
+using TelegramBot.Infrastructure.Domain;
 using TelegramBot.Infrastructure.Interfaces;
 using File = System.IO.File;
 
@@ -70,11 +72,54 @@ public class PrivateChatFunction : IPrivateChatFunction
             cancellationToken: cancellationToken);
     }
 
-    public Task ReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
+    public async Task ReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var handler = message switch
+        {
+            { ReplyToMessage: { Text: "What question do you want to ask? (Write a reply to this message)" } }
+                => SendingQuestionAsync(message, cancellationToken),
+        };
+
+        await handler;
     }
-    
+
+    private async Task SendingQuestionAsync(Message message, CancellationToken cancellationToken)
+    {
+        var groupId = await GetGroupIdAsync();
+        var ownerId = message.Chat.Id;
+
+        var topic = await _context.Topics
+            .FirstOrDefaultAsync(t => t.GroupId == groupId && t.OwnerId == ownerId);
+
+        if (topic == null)
+        {
+            var name = $"{message.Chat.FirstName} - Ask";
+
+            var topicForum = await _client.CreateForumTopicAsync(chatId: groupId,
+                name: name,
+                cancellationToken: cancellationToken);
+
+            topic = new Topic()
+            {
+                TopicId = topicForum.MessageThreadId,
+                GroupId = groupId,
+                Name = name,
+                OwnerId = ownerId
+            };
+
+            await _context.Topics.AddAsync(topic, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        await _client.SendTextMessageAsync(chatId: ownerId,
+            text: $"U asked: {message.Text}. U'll answered soon",
+            cancellationToken: cancellationToken);
+
+        await _client.SendTextMessageAsync(chatId: groupId,
+            text: message.Text,
+            messageThreadId: topic.TopicId);
+    }
+
     private async Task<long> GetGroupIdAsync()
     {
         var filePath = Environment.CurrentDirectory + "/Properties/userSettings.json";
