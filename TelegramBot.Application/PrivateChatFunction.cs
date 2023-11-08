@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBot.Application.Common;
 using TelegramBot.Application.Interfaces;
 using TelegramBot.Infrastructure.Domain;
 using TelegramBot.Infrastructure.Interfaces;
-using File = System.IO.File;
 
 namespace TelegramBot.Application;
 
@@ -44,16 +43,15 @@ public class PrivateChatFunction : IPrivateChatFunction
 
     public async Task HelpAsync(Message message, CancellationToken cancellationToken)
     {
-        // will be function description
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
-            text: "",
+            text: "/ask - command to send a question to the administration.",
             cancellationToken: cancellationToken);
     }
 
     public async Task AskAsync(Message message, CancellationToken cancellationToken)
     {
-        var groupId = await GetGroupIdAsync();
+        var groupId = await Helper.GetGroupIdAsync();
 
         if (groupId.Equals(0))
         {
@@ -85,7 +83,7 @@ public class PrivateChatFunction : IPrivateChatFunction
 
     private async Task SendingQuestionAsync(Message message, CancellationToken cancellationToken)
     {
-        var groupId = await GetGroupIdAsync();
+        var groupId = await Helper.GetGroupIdAsync();
         var ownerId = message.Chat.Id;
 
         var topic = await _context.Topics
@@ -116,19 +114,7 @@ public class PrivateChatFunction : IPrivateChatFunction
             cancellationToken: cancellationToken);
 
         await _client.SendTextMessageAsync(chatId: groupId,
-            text: message.Text,
+            text: $"@{message.Chat.Username} asked: {message.Text}",
             messageThreadId: topic.TopicId);
     }
-
-    private async Task<long> GetGroupIdAsync()
-    {
-        var filePath = Environment.CurrentDirectory + "/Properties/userSettings.json";
-
-        var json = await File.ReadAllTextAsync(filePath);
-        var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
-
-        var groupId = Convert.ToInt64(data["Group"]);
-        return groupId;
-    }
-
 }
