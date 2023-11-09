@@ -5,6 +5,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBot.Application.Common;
 using TelegramBot.Application.Interfaces;
+using TelegramBot.Infrastructure.Domain.Enums;
 using TelegramBot.Infrastructure.Interfaces;
 using File = System.IO.File;
 
@@ -43,9 +44,9 @@ public class GroupChatFunction : IGroupChatFunction
     public async Task HelpAsync(Message message, CancellationToken cancellationToken)
     {
         var response = "/set_group - command to set the main group, \n" +
-                      "/unset_group - command to unset the main group, \n" +
-                      "/send - command to send a response to the user (use in topics).";
-        
+                       "/unset_group - command to unset the main group, \n" +
+                       "/send - command to send a response to the user (use in topics).";
+
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
             text: response,
@@ -98,10 +99,14 @@ public class GroupChatFunction : IGroupChatFunction
 
     public async Task ReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
     {
+        if (message.ReplyToMessage.From.Id != _client.BotId)
+            return;
+
         var handler = message switch
         {
             { ReplyToMessage: { Text: "To send a response, reply to this message." } } => SendingAnswerAsync(message,
                 cancellationToken),
+            _ => UnknownReplyToBotMessageAsync(message, cancellationToken)
         };
 
         await handler;
@@ -110,9 +115,10 @@ public class GroupChatFunction : IGroupChatFunction
     private async Task SendingAnswerAsync(Message message, CancellationToken cancellationToken)
     {
         var groupId = await Helper.GetGroupIdAsync();
-        
+
         var topic = await _context.Topics
-            .FirstOrDefaultAsync(t => t.GroupId == groupId && t.TopicId == message.MessageThreadId);
+            .FirstOrDefaultAsync(t => t.GroupId == groupId
+                                      && t.TopicId == message.MessageThreadId);
 
         if (topic == null)
         {
@@ -124,8 +130,25 @@ public class GroupChatFunction : IGroupChatFunction
             return;
         }
 
+        var response = topic switch
+        {
+            { TopicType: TopicType.Ask } =>
+                $"Administrator {message.From.FirstName} answered: {message.Text} to ur ask",
+            { TopicType: TopicType.Advt } =>
+                $"Administrator {message.From.FirstName} answered: {message.Text} to ur advt offer",
+            { TopicType: TopicType.News } =>
+                $"Administrator {message.From.FirstName} answered: {message.Text} to ur news offer"
+        };
+
         await _client.SendTextMessageAsync(chatId: topic.OwnerId,
-            text: $"Administrator {message.From.FirstName} answered: {message.Text}",
+            text: response,
+            cancellationToken: cancellationToken);
+    }
+
+    private async Task UnknownReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
+    {
+        await _client.SendTextMessageAsync(chatId: message.Chat,
+            text: "I didn't understand u",
             cancellationToken: cancellationToken);
     }
 }

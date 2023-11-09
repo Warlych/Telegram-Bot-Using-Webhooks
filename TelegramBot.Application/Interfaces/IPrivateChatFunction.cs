@@ -7,5 +7,7 @@ public interface IPrivateChatFunction
     Task BeginAsync(Message message, CancellationToken cancellationToken);
     Task HelpAsync(Message message, CancellationToken cancellationToken);
     Task AskAsync(Message message, CancellationToken cancellationToken);
+    Task AdvtAsync(Message message, CancellationToken cancellationToken);
+    Task NewsAsync(Message message, CancellationToken cancellationToken);
     Task ReplyToBotMessageAsync(Message message, CancellationToken cancellationToken);
 }

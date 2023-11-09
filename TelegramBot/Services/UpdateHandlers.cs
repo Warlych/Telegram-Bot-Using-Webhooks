@@ -73,6 +73,8 @@ public class UpdateHandlers
             { Text: "/start" } => _privateChatFunction.BeginAsync(message, cancellationToken),
             { Text: "/help" } => _privateChatFunction.HelpAsync(message, cancellationToken),
             { Text: "/ask" } => _privateChatFunction.AskAsync(message, cancellationToken),
+            { Text: "/advt" } => _privateChatFunction.AdvtAsync(message, cancellationToken),
+            { Text: "/news" } => _privateChatFunction.NewsAsync(message, cancellationToken),
             { ReplyToMessage.Text: not null } => _privateChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
