@@ -1,3 +1,5 @@
+using TelegramBot.Infrastructure.Domain.Enums;
+
 namespace TelegramBot.Infrastructure.Domain;
 
 public class Topic
@@ -6,4 +8,5 @@ public class Topic
     public long GroupId { get; set; }
     public string Name { get; set; }
     public long OwnerId { get; set; }
+    public TopicType TopicType { get; set; }
 }
