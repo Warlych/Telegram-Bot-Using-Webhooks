@@ -91,7 +91,7 @@ public class GroupChatFunction : IGroupChatFunction
     {
         var replyMarkup = new ForceReplyMarkup() { Selective = true };
         await _client.SendTextMessageAsync(chatId: message.Chat,
-            text: "To send a response, reply to this message.",
+            text: "To send a response, reply to this message. (You can attach a document, you should do the same with photos)",
             messageThreadId: message.MessageThreadId,
             replyMarkup: replyMarkup,
             cancellationToken: cancellationToken);
@@ -104,7 +104,7 @@ public class GroupChatFunction : IGroupChatFunction
 
         var handler = message switch
         {
-            { ReplyToMessage: { Text: "To send a response, reply to this message." } } => SendingAnswerAsync(message,
+            { ReplyToMessage: { Text: "To send a response, reply to this message. (You can attach a document, you should do the same with photos)" } } => SendingAnswerAsync(message,
                 cancellationToken),
             _ => UnknownReplyToBotMessageAsync(message, cancellationToken)
         };
@@ -143,6 +143,10 @@ public class GroupChatFunction : IGroupChatFunction
         await _client.SendTextMessageAsync(chatId: topic.OwnerId,
             text: response,
             cancellationToken: cancellationToken);
+
+        if (message.Document != null)
+            await Helper.SendingDocumentAsync(_client, topic.OwnerId, null, message, cancellationToken);
+
     }
 
     private async Task UnknownReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)

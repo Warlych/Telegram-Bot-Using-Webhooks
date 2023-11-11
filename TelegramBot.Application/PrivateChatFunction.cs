@@ -7,6 +7,7 @@ using TelegramBot.Application.Interfaces;
 using TelegramBot.Infrastructure.Domain;
 using TelegramBot.Infrastructure.Domain.Enums;
 using TelegramBot.Infrastructure.Interfaces;
+using File = System.IO.File;
 
 namespace TelegramBot.Application;
 
@@ -146,6 +147,9 @@ public class PrivateChatFunction : IPrivateChatFunction
         await _client.SendTextMessageAsync(chatId: groupId,
             text: $"@{message.Chat.Username} asked: {message.Text}",
             messageThreadId: topic.TopicId);
+
+        if (message.Document != null)
+            await Helper.SendingDocumentAsync(_client, null, topic, message, cancellationToken);
     }
 
     private async Task SendingAdvtAsync(Message message, CancellationToken cancellationToken)
@@ -160,15 +164,17 @@ public class PrivateChatFunction : IPrivateChatFunction
 
         if (topic == null)
             topic = await CreatingTopicByContextAsync(groupId, TopicType.Advt, message, cancellationToken);
-
-
+        
         await _client.SendTextMessageAsync(chatId: ownerId,
             text: $"U suggest: {message.Text}. We'll answered soon.",
             cancellationToken: cancellationToken);
-
+        
         await _client.SendTextMessageAsync(chatId: groupId,
             text: $"@{message.Chat.Username} suggested: {message.Text}",
             messageThreadId: topic.TopicId);
+        
+        if (message.Document != null)
+            await Helper.SendingDocumentAsync(_client, null, topic, message, cancellationToken);
     }
 
     private async Task SendingNewsAsync(Message message, CancellationToken cancellationToken)
@@ -183,8 +189,7 @@ public class PrivateChatFunction : IPrivateChatFunction
 
         if (topic == null)
             topic = await CreatingTopicByContextAsync(groupId, TopicType.News, message, cancellationToken);
-
-
+        
         await _client.SendTextMessageAsync(chatId: ownerId,
             text: $"U offer: {message.Text}. We'll answered soon.",
             cancellationToken: cancellationToken);
@@ -192,6 +197,9 @@ public class PrivateChatFunction : IPrivateChatFunction
         await _client.SendTextMessageAsync(chatId: groupId,
             text: $"@{message.Chat.Username} offered: {message.Text}",
             messageThreadId: topic.TopicId);
+        
+        if (message.Document != null)
+            await Helper.SendingDocumentAsync(_client, null, topic, message, cancellationToken);
     }
 
     private async Task<bool> IsGroupAcceptMessageAsync(Message message, CancellationToken cancellationToken)

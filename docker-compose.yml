@@ -14,15 +14,16 @@ services:
       - default
     environment:
       DbConnection: "Host=postgres_db;Port=5432;Database=BotDb;Username=postgres;Password=postgres"
-      TelegramBot__WebhookURL: "https://3ad3-51-159-211-100.ngrok-free.app"
+      TelegramBot__WebhookURL: "https://373b-51-158-61-168.ngrok-free.app"
       TelegramBot__BotRoute: "bot"
       ASPNETCORE_ENVIRONMENT: Development
     restart: unless-stopped
     volumes:
       - $APPDATA/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - bot_data:/store/files
     
   postgres_db:
-    container_name: PostgreSql
+    container_name: postgreSql
     image: postgres:latest
     environment:
       POSTGRES_USER: "postgres"
@@ -48,3 +49,4 @@ services:
       - default
 volumes:
   data: 
+  bot_data:
