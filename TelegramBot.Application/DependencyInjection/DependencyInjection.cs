@@ -9,6 +9,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IPrivateChatFunction, PrivateChatFunction>();
         services.AddScoped<IGroupChatFunction, GroupChatFunction>();
+        services.AddScoped<IStatisticsFunction, StatisticsFunction>();
         
         return services;
     }

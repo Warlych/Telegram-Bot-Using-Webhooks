@@ -17,11 +17,13 @@ public class UpdateHandlers
 
     private readonly IPrivateChatFunction _privateChatFunction;
     private readonly IGroupChatFunction _groupChatFunction;
+    private readonly IStatisticsFunction _statisticsFunction;
     
     public UpdateHandlers(ITelegramBotClient client, 
         IDataContext context, 
         IPrivateChatFunction privateChatFunction, 
         IGroupChatFunction groupChatFunction,
+        IStatisticsFunction statisticsFunction,
         ILogger<UpdateHandlers> logger)
     {
         _client = client;
@@ -29,6 +31,7 @@ public class UpdateHandlers
         _logger = logger;
         _privateChatFunction = privateChatFunction;
         _groupChatFunction = groupChatFunction;
+        _statisticsFunction = statisticsFunction;
     }
     
     public Task HandleErrorAsync(Exception exception, CancellationToken cancellationToken)
@@ -45,8 +48,13 @@ public class UpdateHandlers
 
     public async Task HandleUpdateAsync(Update update, CancellationToken cancellationToken)
     {
-        var topic = await _context.Topics
-            .FirstOrDefaultAsync(t => t.TopicId == update.Message.MessageThreadId);
+        if (update.Message == null)
+            return;
+        
+        Topic topic = null;
+        if (update.Message.MessageThreadId != null)
+            topic = await _context.Topics
+                .FirstOrDefaultAsync(t => t.TopicId == update.Message.MessageThreadId);
         
         var activity = new Activity
         {
@@ -57,7 +65,7 @@ public class UpdateHandlers
             ChatType = update.Message.Chat.Type,
             Message = update.Message.Text,
             Time = DateTime.Now.ToUniversalTime(),
-            Topic = topic != null ? topic : null
+            Topic = topic 
         };
 
         await _context.Activities.AddAsync(activity, cancellationToken);
@@ -105,10 +113,12 @@ public class UpdateHandlers
             { Text: "/unset_group" } => _groupChatFunction.UnsetGroupAsync(message, cancellationToken),
             { Text: "/send"} and {IsTopicMessage: true} => _groupChatFunction.SendingResponseAsync(message, cancellationToken),
             { Text: "/close_topic" } => _groupChatFunction.CloseTopicAsync(message, cancellationToken),
+            { Text: "/topic_statistics" } => _statisticsFunction.TopicStatisticAsync(message, cancellationToken),
+            { Text: var text } when text.StartsWith("/topic_statistics_date ") => _statisticsFunction.TopicStatisticByDateAsync(message, cancellationToken),
             { ReplyToMessage.Text: not null } => _groupChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
-            _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
+            _ and {From.IsBot: false} => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
-
+        
         _logger.LogInformation("Command {@command} executed", func);
         await func;
     }

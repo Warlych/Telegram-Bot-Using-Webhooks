@@ -49,7 +49,9 @@ public class GroupChatFunction : IGroupChatFunction
         var response = "/set_group - command to set the main group, \n" +
                        "/unset_group - command to unset the main group, \n" +
                        "/send - command to send a response to the user (use in topics), \n" +
-                       "/close_topic - command to close a topic, use inside a topic";
+                       "/close_topic - command to close a topic, use inside a topic, \n" +
+                       "/topic_statistics - command to get statistics on topics, \n" +
+                       @"/topic_statistics_date ""dd-MM-yyyy"" - command to get statistics on topics by date.";
 
         await _client.SendTextMessageAsync(
             chatId: message.Chat,

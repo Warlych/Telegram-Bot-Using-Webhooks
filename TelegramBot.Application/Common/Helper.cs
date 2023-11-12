@@ -59,4 +59,17 @@ public static class Helper
         var groupId = Convert.ToInt64(data["Group"]);
         return groupId;
     }
+
+    public static async Task<DateTime> ExtractDateAsync(string str)
+    {
+        var strs = str.Split(' ');
+
+        if (DateTime.TryParseExact(strs[1], "dd-MM-yyyy", null, System.Globalization.DateTimeStyles.None,
+                out DateTime result))
+        {
+            return result;
+        }
+
+        return DateTime.Now;
+    }
 }
