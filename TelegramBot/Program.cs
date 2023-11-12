@@ -1,3 +1,4 @@
+using Serilog;
 using Telegram.Bot;
 using TelegramBot.Application.DependencyInjection;
 using TelegramBot.Controllers;
@@ -7,6 +8,19 @@ using TelegramBot.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 var token = builder.Configuration["TelegramBotToken"];
+
+builder.Host
+    .UseSerilog(
+        (builderContext, config) =>
+        {
+            config
+                .MinimumLevel.Information()
+                .Enrich.FromLogContext()
+                .WriteTo.Seq("http://seq")
+                .ReadFrom.Configuration(builderContext.Configuration)
+                .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm} [{Level}] ({ThreadId}) {Message}{NewLine}{Exception}");
+        }
+    );
 
 builder.Services.AddHttpClient("telegram_bot_client")
     .AddTypedClient<ITelegramBotClient>((httpClient) =>
@@ -33,7 +47,6 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin();
     });
 });
-
 
 var app = builder.Build();
 

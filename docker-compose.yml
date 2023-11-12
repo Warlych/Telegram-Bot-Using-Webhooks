@@ -4,6 +4,7 @@ services:
   bot:
     depends_on:
       - postgres_db
+      - seq
     container_name: bot
     image: bot:latest
     build:
@@ -14,7 +15,7 @@ services:
       - default
     environment:
       DbConnection: "Host=postgres_db;Port=5432;Database=BotDb;Username=postgres;Password=postgres"
-      TelegramBot__WebhookURL: "https://373b-51-158-61-168.ngrok-free.app"
+      TelegramBot__WebhookURL: "https://81a2-176-59-55-8.ngrok-free.app"
       TelegramBot__BotRoute: "bot"
       ASPNETCORE_ENVIRONMENT: Development
     restart: unless-stopped
@@ -47,6 +48,20 @@ services:
           memory: 4G
     networks:
       - default
+  
+  seq:
+    container_name: seq
+    image: datalust/seq
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - seq:/data
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_API_CANONICALURI: "http://localhost:8080"
+      
 volumes:
   data: 
   bot_data:
+  seq:

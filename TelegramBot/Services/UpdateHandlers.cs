@@ -12,6 +12,7 @@ public class UpdateHandlers
 {
     private readonly ITelegramBotClient _client;
     private readonly IDataContext _context;
+    private readonly ILogger<UpdateHandlers> _logger;
 
     private readonly IPrivateChatFunction _privateChatFunction;
     private readonly IGroupChatFunction _groupChatFunction;
@@ -19,10 +20,12 @@ public class UpdateHandlers
     public UpdateHandlers(ITelegramBotClient client, 
         IDataContext context, 
         IPrivateChatFunction privateChatFunction, 
-        IGroupChatFunction groupChatFunction)
+        IGroupChatFunction groupChatFunction,
+        ILogger<UpdateHandlers> logger)
     {
         _client = client;
         _context = context;
+        _logger = logger;
         _privateChatFunction = privateChatFunction;
         _groupChatFunction = groupChatFunction;
     }
@@ -34,7 +37,8 @@ public class UpdateHandlers
             ApiRequestException apiRequestException => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
             _                                       => exception.ToString()
         };
-
+        
+        _logger.LogError(errorMessage);
         return Task.CompletedTask;
     }
 
@@ -54,6 +58,9 @@ public class UpdateHandlers
         await _context.Activities.AddAsync(activity, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
       
+        _logger.LogInformation("New update: {@update}", update);
+        _logger.LogInformation("Message: {message}", activity.Message);
+        
         var handler = update switch
         {
             { Message: { Chat.Type: ChatType.Private } message } => BotOnPrivateMessageReceiving(message,
@@ -79,6 +86,7 @@ public class UpdateHandlers
             _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
         
+        _logger.LogInformation("Command {@command} executed", func);
         await func;
     }
 
@@ -95,11 +103,13 @@ public class UpdateHandlers
             _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
 
+        _logger.LogInformation("Command {@command} executed", func);
         await func;
     }
 
     private Task UnknownUpdate(Update update, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("The update: {@update} was not processed", update);
         return Task.CompletedTask;
     }
 

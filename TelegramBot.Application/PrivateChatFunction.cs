@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -15,11 +16,15 @@ public class PrivateChatFunction : IPrivateChatFunction
 {
     private readonly ITelegramBotClient _client;
     private readonly IDataContext _context;
+    private readonly ILogger<IPrivateChatFunction> _logger;
 
-    public PrivateChatFunction(ITelegramBotClient client, IDataContext context)
+    public PrivateChatFunction(ITelegramBotClient client, 
+        IDataContext context, 
+        ILogger<IPrivateChatFunction> logger)
     {
         _client = client;
         _context = context;
+        _logger = logger;
     }
 
     public async Task BeginAsync(Message message, CancellationToken cancellationToken)
@@ -149,7 +154,10 @@ public class PrivateChatFunction : IPrivateChatFunction
             messageThreadId: topic.TopicId);
 
         if (message.Document != null)
+        {
             await Helper.SendingDocumentAsync(_client, null, topic, message, cancellationToken);
+            _logger.LogInformation("Document {@document} was send", message.Document);
+        }
     }
 
     private async Task SendingAdvtAsync(Message message, CancellationToken cancellationToken)
@@ -174,7 +182,10 @@ public class PrivateChatFunction : IPrivateChatFunction
             messageThreadId: topic.TopicId);
         
         if (message.Document != null)
+        {
             await Helper.SendingDocumentAsync(_client, null, topic, message, cancellationToken);
+            _logger.LogInformation("Document {@document} was send", message.Document);
+        }
     }
 
     private async Task SendingNewsAsync(Message message, CancellationToken cancellationToken)
@@ -197,9 +208,12 @@ public class PrivateChatFunction : IPrivateChatFunction
         await _client.SendTextMessageAsync(chatId: groupId,
             text: $"@{message.Chat.Username} offered: {message.Text}",
             messageThreadId: topic.TopicId);
-        
+
         if (message.Document != null)
+        {
             await Helper.SendingDocumentAsync(_client, null, topic, message, cancellationToken);
+            _logger.LogInformation("Document {@document} was send", message.Document);
+        }
     }
 
     private async Task<bool> IsGroupAcceptMessageAsync(Message message, CancellationToken cancellationToken)
@@ -244,6 +258,7 @@ public class PrivateChatFunction : IPrivateChatFunction
         await _context.Topics.AddAsync(topic, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
+        _logger.LogInformation("Created new {@topic}", topic);
         return topic;
     }
 

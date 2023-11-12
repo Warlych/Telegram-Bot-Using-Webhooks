@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -15,11 +16,13 @@ public class GroupChatFunction : IGroupChatFunction
 {
     private readonly ITelegramBotClient _client;
     private readonly IDataContext _context;
+    private readonly ILogger<IGroupChatFunction> _logger;
 
-    public GroupChatFunction(ITelegramBotClient client, IDataContext context)
+    public GroupChatFunction(ITelegramBotClient client, IDataContext context, ILogger<IGroupChatFunction> logger)
     {
         _client = client;
         _context = context;
+        _logger = logger;
     }
 
     public async Task BeginAsync(Message message, CancellationToken cancellationToken)
@@ -67,6 +70,8 @@ public class GroupChatFunction : IGroupChatFunction
         json = JsonConvert.SerializeObject(data, Formatting.Indented);
         await File.WriteAllTextAsync(filePath, json);
         await _client.SendTextMessageAsync(message.Chat, "Group was set.");
+        
+        _logger.LogInformation("Group {groupId} was set", groupId);
     }
 
     public async Task UnsetGroupAsync(Message message, CancellationToken cancellationToken)
@@ -85,6 +90,8 @@ public class GroupChatFunction : IGroupChatFunction
         await File.WriteAllTextAsync(filePath, json);
 
         await _client.SendTextMessageAsync(message.Chat, "Group was unset.");
+        
+        _logger.LogInformation("Group {groupId} was unset", groupId);
     }
 
     public async Task SendingResponseAsync(Message message, CancellationToken cancellationToken)
@@ -145,8 +152,10 @@ public class GroupChatFunction : IGroupChatFunction
             cancellationToken: cancellationToken);
 
         if (message.Document != null)
+        {
             await Helper.SendingDocumentAsync(_client, topic.OwnerId, null, message, cancellationToken);
-
+            _logger.LogInformation("Document {@document} was send", message.Document);
+        }
     }
 
     private async Task UnknownReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
