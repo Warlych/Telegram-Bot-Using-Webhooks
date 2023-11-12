@@ -100,6 +100,14 @@ public class PrivateChatFunction : IPrivateChatFunction
         if (message.ReplyToMessage.From.Id != _client.BotId)
             return;
 
+        if (message.Text.StartsWith('/'))
+        {
+            await _client.SendTextMessageAsync(chatId: message.Chat,
+                text: @"Reply to messages cannot be a message starting with ""/""",
+                cancellationToken: cancellationToken);
+            return;
+        }
+
         var handler = message switch
         {
             {
