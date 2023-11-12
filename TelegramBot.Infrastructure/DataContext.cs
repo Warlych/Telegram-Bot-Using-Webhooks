@@ -12,6 +12,10 @@ public class DataContext : DbContext, IDataContext
     {
         builder.Entity<Activity>().HasKey(a => a.Id);
         builder.Entity<Topic>().HasKey(t => t.TopicId);
+
+        builder.Entity<Topic>().HasMany(t => t.TopicActivies)
+            .WithOne(a => a.Topic)
+            .OnDelete(DeleteBehavior.Cascade);
         
         base.OnModelCreating(builder);
     }

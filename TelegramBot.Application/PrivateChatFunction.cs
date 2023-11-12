@@ -148,7 +148,8 @@ public class PrivateChatFunction : IPrivateChatFunction
         var topic = await _context.Topics
             .FirstOrDefaultAsync(t => t.GroupId == groupId
                                       && t.OwnerId == ownerId
-                                      && t.TopicType == TopicType.Ask);
+                                      && t.TopicType == TopicType.Ask
+                                      && t.ClosingDate == null);
 
         if (topic == null)
             topic = await CreatingTopicByContextAsync(groupId, TopicType.Ask, message, cancellationToken);
@@ -176,7 +177,8 @@ public class PrivateChatFunction : IPrivateChatFunction
         var topic = await _context.Topics
             .FirstOrDefaultAsync(t => t.GroupId == groupId
                                       && t.OwnerId == ownerId
-                                      && t.TopicType == TopicType.Advt);
+                                      && t.TopicType == TopicType.Advt
+                                      && t.ClosingDate == null);
 
         if (topic == null)
             topic = await CreatingTopicByContextAsync(groupId, TopicType.Advt, message, cancellationToken);
@@ -204,7 +206,8 @@ public class PrivateChatFunction : IPrivateChatFunction
         var topic = await _context.Topics
             .FirstOrDefaultAsync(t => t.GroupId == groupId
                                       && t.OwnerId == ownerId
-                                      && t.TopicType == TopicType.News);
+                                      && t.TopicType == TopicType.News
+                                      && t.ClosingDate == null);
 
         if (topic == null)
             topic = await CreatingTopicByContextAsync(groupId, TopicType.News, message, cancellationToken);
@@ -260,7 +263,9 @@ public class PrivateChatFunction : IPrivateChatFunction
             GroupId = groupId,
             Name = name,
             OwnerId = message.Chat.Id,
-            TopicType = topicType
+            TopicType = topicType,
+            CreationDate = DateTime.Now.ToUniversalTime(),
+            TopicActivies = new List<Activity>()
         };
 
         await _context.Topics.AddAsync(topic, cancellationToken);

@@ -9,6 +9,7 @@ public interface IGroupChatFunction
     Task HelpAsync(Message message, CancellationToken cancellationToken);
     Task SetGroupAsync(Message message, CancellationToken cancellationToken);
     Task UnsetGroupAsync(Message message, CancellationToken cancellationToken);
+    Task CloseTopicAsync(Message message, CancellationToken cancellationToken);
     Task SendingResponseAsync(Message message, CancellationToken cancellationToken);
     Task ReplyToBotMessageAsync(Message message, CancellationToken cancellationToken);
 }

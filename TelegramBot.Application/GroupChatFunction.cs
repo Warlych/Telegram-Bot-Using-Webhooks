@@ -48,7 +48,8 @@ public class GroupChatFunction : IGroupChatFunction
     {
         var response = "/set_group - command to set the main group, \n" +
                        "/unset_group - command to unset the main group, \n" +
-                       "/send - command to send a response to the user (use in topics).";
+                       "/send - command to send a response to the user (use in topics), \n" +
+                       "/close_topic - command to close a topic, use inside a topic";
 
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
@@ -94,6 +95,24 @@ public class GroupChatFunction : IGroupChatFunction
         _logger.LogInformation("Group {groupId} was unset", groupId);
     }
 
+    public async Task CloseTopicAsync(Message message, CancellationToken cancellationToken)
+    {
+        var groupId = await Helper.GetGroupIdAsync();
+        
+        var topic = await _context.Topics
+            .FirstOrDefaultAsync(t => t.GroupId == groupId
+                                      && t.TopicId == message.MessageThreadId
+                                      && t.ClosingDate == null);
+        
+        await _client.DeleteForumTopicAsync(chatId: topic.GroupId, 
+            messageThreadId: topic.TopicId, 
+            cancellationToken: cancellationToken);
+        
+        _logger.LogInformation("Topic: {@topic} closed", topic);
+        topic.ClosingDate = DateTime.Now.ToUniversalTime();
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+    
     public async Task SendingResponseAsync(Message message, CancellationToken cancellationToken)
     {
         var replyMarkup = new ForceReplyMarkup() { Selective = true };
@@ -125,7 +144,8 @@ public class GroupChatFunction : IGroupChatFunction
 
         var topic = await _context.Topics
             .FirstOrDefaultAsync(t => t.GroupId == groupId
-                                      && t.TopicId == message.MessageThreadId);
+                                      && t.TopicId == message.MessageThreadId
+                                      && t.ClosingDate == null);
 
         if (topic == null)
         {

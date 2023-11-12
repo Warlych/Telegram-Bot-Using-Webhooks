@@ -11,4 +11,5 @@ public class Activity
     public ChatType ChatType { get; set; }
     public string? Message { get; set; }
     public DateTime Time { get; set; }
+    public Topic? Topic { get; set; }
 }

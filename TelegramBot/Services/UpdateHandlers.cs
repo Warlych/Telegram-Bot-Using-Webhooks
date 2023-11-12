@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -44,6 +45,9 @@ public class UpdateHandlers
 
     public async Task HandleUpdateAsync(Update update, CancellationToken cancellationToken)
     {
+        var topic = await _context.Topics
+            .FirstOrDefaultAsync(t => t.TopicId == update.Message.MessageThreadId);
+        
         var activity = new Activity
         {
             Id = Guid.NewGuid(),
@@ -52,7 +56,8 @@ public class UpdateHandlers
             ChatId = update.Message.Chat.Id,
             ChatType = update.Message.Chat.Type,
             Message = update.Message.Text,
-            Time = DateTime.Now.ToUniversalTime()
+            Time = DateTime.Now.ToUniversalTime(),
+            Topic = topic != null ? topic : null
         };
 
         await _context.Activities.AddAsync(activity, cancellationToken);
@@ -99,6 +104,7 @@ public class UpdateHandlers
             { Text: "/set_group" } => _groupChatFunction.SetGroupAsync(message, cancellationToken),
             { Text: "/unset_group" } => _groupChatFunction.UnsetGroupAsync(message, cancellationToken),
             { Text: "/send"} and {IsTopicMessage: true} => _groupChatFunction.SendingResponseAsync(message, cancellationToken),
+            { Text: "/close_topic" } => _groupChatFunction.CloseTopicAsync(message, cancellationToken),
             { ReplyToMessage.Text: not null } => _groupChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };

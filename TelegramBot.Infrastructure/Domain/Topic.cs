@@ -9,4 +9,7 @@ public class Topic
     public string Name { get; set; }
     public long OwnerId { get; set; }
     public TopicType TopicType { get; set; }
+    public DateTime CreationDate { get; set; }
+    public DateTime? ClosingDate { get; set; }
+    public ICollection<Activity> TopicActivies { get; set; }
 }
