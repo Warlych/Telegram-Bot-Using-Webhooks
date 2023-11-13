@@ -4,6 +4,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using TelegramBot.Application.Interfaces;
+using TelegramBot.Exceptions;
 using TelegramBot.Infrastructure.Domain;
 using TelegramBot.Infrastructure.Interfaces;
 
@@ -18,12 +19,14 @@ public class UpdateHandlers
     private readonly IPrivateChatFunction _privateChatFunction;
     private readonly IGroupChatFunction _groupChatFunction;
     private readonly IStatisticsFunction _statisticsFunction;
+    private readonly IChannelFunction _channelFunction;
     
     public UpdateHandlers(ITelegramBotClient client, 
         IDataContext context, 
         IPrivateChatFunction privateChatFunction, 
         IGroupChatFunction groupChatFunction,
         IStatisticsFunction statisticsFunction,
+        IChannelFunction channelFunction,
         ILogger<UpdateHandlers> logger)
     {
         _client = client;
@@ -32,6 +35,7 @@ public class UpdateHandlers
         _privateChatFunction = privateChatFunction;
         _groupChatFunction = groupChatFunction;
         _statisticsFunction = statisticsFunction;
+        _channelFunction = channelFunction;
     }
     
     public Task HandleErrorAsync(Exception exception, CancellationToken cancellationToken)
@@ -48,31 +52,15 @@ public class UpdateHandlers
 
     public async Task HandleUpdateAsync(Update update, CancellationToken cancellationToken)
     {
-        if (update.Message == null)
-            return;
-        
-        Topic topic = null;
-        if (update.Message.MessageThreadId != null)
-            topic = await _context.Topics
-                .FirstOrDefaultAsync(t => t.TopicId == update.Message.MessageThreadId);
-        
-        var activity = new Activity
-        {
-            Id = Guid.NewGuid(),
-            MessageId = update.Message.MessageId,
-            IsBot = update.Message.From.IsBot,
-            ChatId = update.Message.Chat.Id,
-            ChatType = update.Message.Chat.Type,
-            Message = update.Message.Text,
-            Time = DateTime.Now.ToUniversalTime(),
-            Topic = topic 
-        };
-
-        await _context.Activities.AddAsync(activity, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
-      
         _logger.LogInformation("New update: {@update}", update);
-        _logger.LogInformation("Message: {message}", activity.Message);
+        
+        var activity = await CreateActivityAsync(update, cancellationToken);
+
+        if (activity != null)
+        {
+            await _context.Activities.AddAsync(activity, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
         
         var handler = update switch
         {
@@ -80,6 +68,7 @@ public class UpdateHandlers
                 cancellationToken),
             { Message: { Chat.Type: ChatType.Group or ChatType.Supergroup } message} => BotOnGroupMessageReceiving(
                 message, cancellationToken),
+            { ChannelPost: not null } => BotOnChannelUpdateReceiving(update, cancellationToken),
             _ => UnknownUpdate(update, cancellationToken)
         };
 
@@ -123,10 +112,70 @@ public class UpdateHandlers
         await func;
     }
 
+    private async Task BotOnChannelUpdateReceiving(Update update, CancellationToken cancellationToken)
+    {
+        var func = update.ChannelPost switch
+        {
+            { Text: "/set_channel" } => _channelFunction.SetChannelAsync(update, cancellationToken),
+            { Text: "/unset_channel" } => _channelFunction.UnsetChannelAsync(update, cancellationToken),
+            _ => UnknownUpdate(update, cancellationToken),
+        };
+
+        _logger.LogInformation("Command {@command} executed", func);
+        await func;
+    }
+    
     private Task UnknownUpdate(Update update, CancellationToken cancellationToken)
     {
         _logger.LogInformation("The update: {@update} was not processed", update);
         return Task.CompletedTask;
     }
 
+    private async Task<Activity> CreateActivityAsync(Update update, CancellationToken cancellationToken)
+    {
+        if (update.Type == UpdateType.Message)
+        {
+            Topic topic = null;
+            if (update.Message.MessageThreadId != null)
+                topic = await _context.Topics
+                    .FirstOrDefaultAsync(t => t.TopicId == update.Message.MessageThreadId);
+            
+            var activity = new Activity
+            {
+                Id = Guid.NewGuid(),
+                ActivityFromBotId = update.Id,
+                IsBot = update.Message.From.IsBot,
+                UpdateType = update.Type,
+                ChatId = update.Message.Chat.Id,
+                ChatType = update.Message.Chat.Type,
+                Text = update.Message.Text,
+                Time = DateTime.Now.ToUniversalTime(),
+                Topic = topic 
+            };
+            
+            _logger.LogInformation("Activity created {@activity}", activity);
+            return activity;
+        }
+
+        if (update.Type == UpdateType.ChannelPost)
+        {
+            var activity = new Activity
+            {
+                Id = Guid.NewGuid(),
+                ActivityFromBotId = update.Id,
+                IsBot = null,
+                UpdateType = update.Type,
+                ChatId = update.ChannelPost.Chat.Id,
+                ChatType = update.ChannelPost.Chat.Type,
+                Text = update.ChannelPost.Text,
+                Time = DateTime.Now.ToUniversalTime(),
+                Topic = null 
+            };
+            
+            _logger.LogInformation("Activity created {@activity}", activity);
+            return activity;
+        }
+        
+        throw new CannotCreateActivityException($"Failed to create activity for update type: {update.Type}");
+    }
 }

@@ -10,6 +10,7 @@ public static class DependencyInjection
         services.AddScoped<IPrivateChatFunction, PrivateChatFunction>();
         services.AddScoped<IGroupChatFunction, GroupChatFunction>();
         services.AddScoped<IStatisticsFunction, StatisticsFunction>();
+        services.AddScoped<IChannelFunction, ChannelFunction>();
         
         return services;
     }
