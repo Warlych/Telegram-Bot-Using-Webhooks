@@ -59,6 +59,18 @@ public static class Helper
         var groupId = Convert.ToInt64(data["Group"]);
         return groupId;
     }
+    
+    public static async Task<long> GetChannelIdAsync()
+    {
+        var filePath = Environment.CurrentDirectory + "/Properties/userSettings.json";
+
+        var json = await File.ReadAllTextAsync(filePath);
+        var data = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+
+        var groupId = Convert.ToInt64(data["Channel"]);
+        return groupId;
+    }
+
 
     public static async Task<DateTime> ExtractDateAsync(string str)
     {
