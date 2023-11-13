@@ -6,6 +6,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBot.Application.Common;
 using TelegramBot.Application.Interfaces;
+using TelegramBot.Infrastructure.Domain;
 using TelegramBot.Infrastructure.Domain.Enums;
 using TelegramBot.Infrastructure.Interfaces;
 using File = System.IO.File;
@@ -145,6 +146,7 @@ public class GroupChatFunction : IGroupChatFunction
         var groupId = await Helper.GetGroupIdAsync();
 
         var topic = await _context.Topics
+            .Include(t => t.TopicActivies)
             .FirstOrDefaultAsync(t => t.GroupId == groupId
                                       && t.TopicId == message.MessageThreadId
                                       && t.ClosingDate == null);
@@ -162,11 +164,11 @@ public class GroupChatFunction : IGroupChatFunction
         var response = topic switch
         {
             { TopicType: TopicType.Ask } =>
-                $"Administrator {message.From.FirstName} answered: {message.Text} to ur ask",
+                $"Administrator {message.From.FirstName} answered: {message.Text} to ur ask: {topic.TopicActivies.ElementAt(topic.TopicActivies.Count - 2)}",
             { TopicType: TopicType.Advt } =>
-                $"Administrator {message.From.FirstName} answered: {message.Text} to ur advt offer",
+                $"Administrator {message.From.FirstName} answered: {message.Text} to ur advt offer: {topic.TopicActivies.ElementAt(topic.TopicActivies.Count - 2)}",
             { TopicType: TopicType.News } =>
-                $"Administrator {message.From.FirstName} answered: {message.Text} to ur news offer"
+                $"Administrator {message.From.FirstName} answered: {message.Text} to ur news offer: {topic.TopicActivies.ElementAt(topic.TopicActivies.Count - 2)}"
         };
 
         await _client.SendTextMessageAsync(chatId: topic.OwnerId,
