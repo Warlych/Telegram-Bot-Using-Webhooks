@@ -110,6 +110,8 @@ public class UpdateHandlers
             { Text: "/send"} and {IsTopicMessage: true} => _groupChatFunction.SendingResponseAsync(message, cancellationToken),
             { Text: "/close_topic" } => _groupChatFunction.CloseTopicAsync(message, cancellationToken),
             { Text: "/topic_statistics" } => _statisticsFunction.TopicStatisticAsync(message, cancellationToken),
+            { Text: var text } when text.StartsWith("/ban") => _channelFunction.BanUserAsync(message, cancellationToken),
+            { Text: var text } when text.StartsWith("/unban") => _channelFunction.UnbanUserAsync(message, cancellationToken),
             { Text: var text } when text.StartsWith("/topic_statistics_date ") => _statisticsFunction.TopicStatisticByDateAsync(message, cancellationToken),
             { ReplyToMessage.Text: not null } => _groupChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ and {From.IsBot: false} => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")

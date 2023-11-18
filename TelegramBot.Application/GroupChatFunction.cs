@@ -52,7 +52,9 @@ public class GroupChatFunction : IGroupChatFunction
                        "/send - command to send a response to the user (use in topics), \n" +
                        "/close_topic - command to close a topic, use inside a topic, \n" +
                        "/topic_statistics - command to get statistics on topics, \n" +
-                       @"/topic_statistics_date ""dd-MM-yyyy"" - command to get statistics on topics by date.";
+                       @"/topic_statistics_date ""dd-MM-yyyy"" - command to get statistics on topics by date, \n" +
+                       "/ban username:reason - command to ban a user in a channel, \n" +
+                       "/unban username - command to unban a user in a channel";
 
         await _client.SendTextMessageAsync(
             chatId: message.Chat,
@@ -133,8 +135,21 @@ public class GroupChatFunction : IGroupChatFunction
 
         var handler = message switch
         {
-            { ReplyToMessage: { Text: "To send a response, reply to this message. (You can attach a document, you should do the same with photos)" } } => SendingAnswerAsync(message,
+            {
+                ReplyToMessage:
+                {
+                    Text:
+                    "To send a response, reply to this message. (You can attach a document, you should do the same with photos)"
+                }
+            } => SendingAnswerAsync(message,
                 cancellationToken),
+            {
+                ReplyToMessage:
+                {
+                    Text:
+                    @"The user was not found, you can try to update the database, but it may take time. Reply ""Yes"" to this message to begin the process."
+                }
+            } => UpdatingConsumerDataAsync(message, cancellationToken),
             _ => UnknownReplyToBotMessageAsync(message, cancellationToken)
         };
 
@@ -182,10 +197,36 @@ public class GroupChatFunction : IGroupChatFunction
         }
     }
 
+    private async Task UpdatingConsumerDataAsync(Message message, CancellationToken cancellationToken)
+    {
+        await _client.SendTextMessageAsync(chatId: message.Chat,
+            text: "The update has started, Expect the end.",
+            cancellationToken: cancellationToken);
+        
+        var consumers = _context.Consumers.ToArray();
+
+        foreach (var consumer in consumers)
+        {
+            var newInfo = await _client.GetChatAsync(consumer.ConsumerId);
+
+            if (consumer.Name != newInfo.Username)
+            {
+                consumer.Name = newInfo.Username;
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            
+            Task.Delay(15000);   
+        }
+        
+        await _client.SendTextMessageAsync(chatId: message.Chat,
+            text: "The update has finished. Try banning the user again.",
+            cancellationToken: cancellationToken);
+    }
+    
     private async Task UnknownReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
     {
         await _client.SendTextMessageAsync(chatId: message.Chat,
-            text: "I didn't understand u",
+            text: "I didn't understand u.",
             cancellationToken: cancellationToken);
     }
 }
