@@ -23,7 +23,7 @@ public class ConfigureWebhook : IHostedService
         
         var webhook = $"{_configuration["TelegramBot:WebhookUrl"]}/{_configuration["TelegramBot:BotRoute"]}";
         await client.SetWebhookAsync(url: webhook, 
-            allowedUpdates: Array.Empty<UpdateType>(), 
+            allowedUpdates: new [] { UpdateType.Message, UpdateType.ChannelPost, UpdateType.ChatMember, UpdateType.Unknown }, 
             cancellationToken: cancellationToken);
     }
     

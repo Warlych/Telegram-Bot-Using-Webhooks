@@ -3,6 +3,7 @@ using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TelegramBot.Application.Common;
 using TelegramBot.Application.Interfaces;
 using TelegramBot.Exceptions;
 using TelegramBot.Infrastructure.Domain;
@@ -53,20 +54,19 @@ public class UpdateHandlers
     public async Task HandleUpdateAsync(Update update, CancellationToken cancellationToken)
     {
         _logger.LogInformation("New update: {@update}", update);
-        
-        var activity = await CreateActivityAsync(update, cancellationToken);
 
-        if (activity != null)
-        {
-            await _context.Activities.AddAsync(activity, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        var consumer = await CreateOrGetConsumerAsync(update, cancellationToken);
+
+        if (consumer == null)
+            throw new ArgumentNullException($"Consumer is null");
+        
+        await CreateActivityAsync(update, consumer, cancellationToken);
         
         var handler = update switch
         {
             { Message: { Chat.Type: ChatType.Private } message } => BotOnPrivateMessageReceiving(message,
                 cancellationToken),
-            { Message: { Chat.Type: ChatType.Group or ChatType.Supergroup } message} => BotOnGroupMessageReceiving(
+            { Message: { Chat.Type: ChatType.Group or ChatType.Supergroup } message } => BotOnGroupMessageReceiving(
                 message, cancellationToken),
             { ChannelPost: not null } => BotOnChannelUpdateReceiving(update, cancellationToken),
             _ => UnknownUpdate(update, cancellationToken)
@@ -74,7 +74,7 @@ public class UpdateHandlers
 
         await handler;
     }
-    
+
     private async Task BotOnPrivateMessageReceiving(Message message, CancellationToken cancellationToken)
     {
         var func = message switch
@@ -94,6 +94,13 @@ public class UpdateHandlers
 
     private async Task BotOnGroupMessageReceiving(Message message, CancellationToken cancellationToken)
     {
+        // A simple condition to ignore requests from third party groups. Validation may change depending on context
+        var groupId = await Helper.GetGroupIdAsync();
+            
+        if(!groupId.Equals(0))
+            if (groupId != message.Chat.Id)
+                return;
+        
         var func = message switch
         {
             { Text: "/start" } => _groupChatFunction.BeginAsync(message, cancellationToken),
@@ -114,6 +121,12 @@ public class UpdateHandlers
 
     private async Task BotOnChannelUpdateReceiving(Update update, CancellationToken cancellationToken)
     {
+        // A simple condition to ignore requests from third party channels. Validation may change depending on context
+        var channelId = await Helper.GetChannelIdAsync();
+        if(!channelId.Equals(0))
+            if (channelId != update.ChannelPost.Chat.Id)
+                return;
+        
         var func = update.ChannelPost switch
         {
             { Text: "/set_channel" } => _channelFunction.SetChannelAsync(update, cancellationToken),
@@ -131,8 +144,55 @@ public class UpdateHandlers
         return Task.CompletedTask;
     }
 
-    private async Task<Activity> CreateActivityAsync(Update update, CancellationToken cancellationToken)
+    private async Task<Consumer> CreateOrGetConsumerAsync(Update update, CancellationToken cancellationToken)
     {
+        User user = null;
+
+        switch (update.Type)
+        {
+            case UpdateType.Message:
+                user = update.Message.From;
+                break;
+            
+            case UpdateType.ChannelPost:
+                user = update.ChannelPost.From;
+                break;
+            
+            case UpdateType.ChatMember:
+                user = update.ChatMember.NewChatMember.User;
+                break;
+            
+            default:
+                return null;
+        }
+        
+        var consumer = await _context.Consumers
+            .FirstOrDefaultAsync(c => c.ConsumerId == user.Id);
+
+        if (consumer == null)
+        {
+            consumer = new Consumer()
+            {
+                ConsumerId = user.Id,
+                Name = user.Username,
+                IsBot = user.IsBot,
+                EntryDate = DateTime.Now.ToUniversalTime(),
+                Bans = new List<BanInfo>()
+            };
+            
+            await _context.Consumers.AddAsync(consumer, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        
+        _logger.LogInformation("Consumer created {@consumer}", consumer);
+        return consumer;
+    }
+    
+    private async Task CreateActivityAsync(Update update, Consumer consumer, CancellationToken cancellationToken)
+    {
+        if (update.Type == UpdateType.ChatMember || update.Type == UpdateType.Unknown)
+            return;
+        
         if (update.Type == UpdateType.Message)
         {
             Topic topic = null;
@@ -144,17 +204,20 @@ public class UpdateHandlers
             {
                 Id = Guid.NewGuid(),
                 ActivityFromBotId = update.Id,
-                IsBot = update.Message.From.IsBot,
                 UpdateType = update.Type,
-                ChatId = update.Message.Chat.Id,
                 ChatType = update.Message.Chat.Type,
                 Text = update.Message.Text,
                 Time = DateTime.Now.ToUniversalTime(),
-                Topic = topic 
+                Topic = topic,
+                Consumer = consumer
             };
             
             _logger.LogInformation("Activity created {@activity}", activity);
-            return activity;
+            
+            await _context.Activities.AddAsync(activity, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return;
         }
 
         if (update.Type == UpdateType.ChannelPost)
@@ -163,17 +226,20 @@ public class UpdateHandlers
             {
                 Id = Guid.NewGuid(),
                 ActivityFromBotId = update.Id,
-                IsBot = null,
                 UpdateType = update.Type,
-                ChatId = update.ChannelPost.Chat.Id,
                 ChatType = update.ChannelPost.Chat.Type,
                 Text = update.ChannelPost.Text,
                 Time = DateTime.Now.ToUniversalTime(),
-                Topic = null 
+                Topic = null,
+                Consumer = consumer
             };
             
             _logger.LogInformation("Activity created {@activity}", activity);
-            return activity;
+            
+            await _context.Activities.AddAsync(activity, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
+            
+            return;
         }
         
         throw new CannotCreateActivityException($"Failed to create activity for update type: {update.Type}");
