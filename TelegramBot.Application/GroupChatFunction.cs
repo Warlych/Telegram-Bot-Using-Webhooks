@@ -52,7 +52,8 @@ public class GroupChatFunction : IGroupChatFunction
                        "/close_topic - command to close a topic, use inside a topic, \n" +
                        "/topic_statistics - command to get statistics on topics, \n" +
                        "/topic_statistics_date \"dd-MM-yyyy\" - command to get statistics on topics by date, \n" +
-                       "/channel_subscribes - command to get statistics on channel subscribers" +
+                       "/channel_subscribes - command to get statistics on channel subscribers, \n" +
+                       "/channel_posts - command to get statistics on channel posts, \n" +
                        "/ban username:reason - command to ban a user in a channel, \n" +
                        "/unban username - command to unban a user in a channel, \n" +
                        "/channel_members - command returned count of subscribers.";

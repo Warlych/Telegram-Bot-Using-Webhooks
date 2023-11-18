@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
 using TelegramBot.Application.Common;
 using TelegramBot.Application.Interfaces;
 using TelegramBot.Infrastructure.Domain;
@@ -144,6 +145,62 @@ public class StatisticsFunction : IStatisticsFunction
             cancellationToken: cancellationToken);
     }
 
+    public async Task ChannelPostStatisticAsync(Message message, CancellationToken cancellationToken)
+    {
+        var channelId = await Helper.GetChannelIdAsync();
+
+        var posts = _context.Activities
+            .Include(a => a.Consumer)
+            .Where(a => a.UpdateType == UpdateType.ChannelPost && a.Consumer.ConsumerId == channelId)
+            .ToArray();
+        
+        var model = new PostStatisticModel()
+        {
+            Today = 0,
+            Month = 0,
+            ThreeMonth = 0,
+            Year = 0,
+        };
+        
+        foreach (var post in posts)
+        {
+            if (DateTime.Now.ToUniversalTime().Date <= post.Time)
+            {
+                model.Today++;
+            }
+
+            if (DateTime.Today.AddMonths(-1).ToUniversalTime() <= post.Time)
+            {
+                model.Month++;
+            }
+
+            if (DateTime.Today.AddMonths(-3).ToUniversalTime() <= post.Time)
+            {
+                model.ThreeMonth++;
+            }
+            
+            if (DateTime.Today.AddMonths(-12).ToUniversalTime() <= post.Time)
+            {
+                model.Year++;
+            }
+        }
+        
+        await _client.SendTextMessageAsync(chatId: message.Chat,
+            text: $"Statistic for a {channelId}: \n" +
+                  $"Posts for today: {model.Today}\n" +
+                  $"Posts for month: {model.Month}\n" +
+                  $"Posts for three month: {model.ThreeMonth}\n",
+            cancellationToken: cancellationToken);
+    }
+    
+    private class PostStatisticModel
+    {
+        public int Today { get; set; }
+        public int Month { get; set; }
+        public int ThreeMonth { get; set; }
+        public int Year { get; set; }
+    }
+    
     private class SubscribeStatisticModel
     {
         public int Today { get; set; }

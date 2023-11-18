@@ -116,6 +116,7 @@ public class UpdateHandlers
             { Text: var text } when text.StartsWith("/topic_statistics_date ") => _statisticsFunction.TopicStatisticByDateAsync(message, cancellationToken),
             { Text: "/channel_members" } => _channelFunction.ChannelMemberCountAsync(message, cancellationToken),
             { Text: "/channel_subscribes" } => _statisticsFunction.ChannelSubscribeStatisticAsync(message, cancellationToken),
+            { Text: "/channel_posts" } => _statisticsFunction.ChannelPostStatisticAsync(message, cancellationToken),
             { ReplyToMessage.Text: not null } => _groupChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ and {From.IsBot: false} => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
@@ -171,36 +172,54 @@ public class UpdateHandlers
 
     private async Task<Consumer> CreateOrGetConsumerAsync(Update update, CancellationToken cancellationToken)
     {
-        User user = null;
+        ConsumerInfo consumerInfo = null;
 
         switch (update.Type)
         {
             case UpdateType.Message:
-                user = update.Message.From;
+                consumerInfo = new ConsumerInfo()
+                {
+                    Id = update.Message.From.Id,
+                    Name = update.Message.From.Username,
+                    IsBot = update.Message.From.IsBot,
+                };
+
                 break;
-            
-            case UpdateType.ChannelPost:
-                user = update.ChannelPost.From;
-                break;
-            
+
             case UpdateType.ChatMember:
-                user = update.ChatMember.NewChatMember.User;
+                consumerInfo = new ConsumerInfo()
+                {
+                    Id = update.ChatMember.NewChatMember.User.Id,
+                    Name = update.ChatMember.NewChatMember.User.Username,
+                    IsBot = update.ChatMember.NewChatMember.User.IsBot,
+                };
+
                 break;
-            
+
+            case UpdateType.ChannelPost:
+                consumerInfo = new ConsumerInfo()
+                {
+                    Id = update.ChannelPost.Chat.Id,
+                    Name = update.ChannelPost.Chat.Username,
+                    IsBot = false,
+                };
+
+                break;
+
             default:
                 return null;
         }
-        
+
         var consumer = await _context.Consumers
-            .FirstOrDefaultAsync(c => c.ConsumerId == user.Id);
+            .FirstOrDefaultAsync(c => c.ConsumerId == consumerInfo.Id);
 
         if (consumer == null)
         {
             consumer = new Consumer()
             {
-                ConsumerId = user.Id,
-                Name = user.Username,
-                IsBot = user.IsBot,
+                ConsumerId = consumerInfo.Id,
+                Name = consumerInfo.Name,
+                IsBot = consumerInfo.IsBot,
                 EntryDate = DateTime.Now.ToUniversalTime(),
                 Bans = new List<BanInfo>()
             };
@@ -208,11 +227,11 @@ public class UpdateHandlers
             await _context.Consumers.AddAsync(consumer, cancellationToken);
             await _context.SaveChangesAsync(cancellationToken);
         }
-        
+
         _logger.LogInformation("Consumer created {@consumer}", consumer);
         return consumer;
     }
-    
+
     private async Task CreateActivityAsync(Update update, Consumer consumer, CancellationToken cancellationToken)
     {
         if (update.Type == UpdateType.ChatMember || update.Type == UpdateType.Unknown)
@@ -268,5 +287,12 @@ public class UpdateHandlers
         }
         
         throw new CannotCreateActivityException($"Failed to create activity for update type: {update.Type}");
+    }
+
+    private class ConsumerInfo
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+        public bool IsBot { get; set; }
     }
 }
