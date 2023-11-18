@@ -8,4 +8,5 @@ public interface IChannelFunction
     Task UnsetChannelAsync(Update update, CancellationToken cancellationToken);
     Task BanUserAsync(Message message, CancellationToken cancellationToken);
     Task UnbanUserAsync(Message message, CancellationToken cancellationToken);
+    Task ChannelMemberCountAsync(Message message, CancellationToken cancellationToken);
 }

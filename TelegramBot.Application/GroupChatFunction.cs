@@ -54,7 +54,8 @@ public class GroupChatFunction : IGroupChatFunction
                        "/topic_statistics - command to get statistics on topics, \n" +
                        @"/topic_statistics_date ""dd-MM-yyyy"" - command to get statistics on topics by date, \n" +
                        "/ban username:reason - command to ban a user in a channel, \n" +
-                       "/unban username - command to unban a user in a channel";
+                       "/unban username - command to unban a user in a channel, \n" +
+                       "/channel_members - command returned count of subscribers.";
 
         await _client.SendTextMessageAsync(
             chatId: message.Chat,

@@ -190,6 +190,16 @@ public class ChannelFunction : IChannelFunction
             text: $"User {consumer.Name} was unbanned.",
             cancellationToken: cancellationToken);
     }
+
+    public async Task ChannelMemberCountAsync(Message message, CancellationToken cancellationToken)
+    {
+        var channelId = await Helper.GetChannelIdAsync();
+        var count = await _client.GetChatMemberCountAsync(channelId, cancellationToken);
+
+        await _client.SendTextMessageAsync(chatId: message.Chat,
+            text: $"Count of members: {count}",
+            cancellationToken: cancellationToken);
+    }
     
     private async Task UnknownReplyToBotMessageAsync(Message message, CancellationToken cancellationToken)
     {

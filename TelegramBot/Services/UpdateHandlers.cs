@@ -113,6 +113,7 @@ public class UpdateHandlers
             { Text: var text } when text.StartsWith("/ban") => _channelFunction.BanUserAsync(message, cancellationToken),
             { Text: var text } when text.StartsWith("/unban") => _channelFunction.UnbanUserAsync(message, cancellationToken),
             { Text: var text } when text.StartsWith("/topic_statistics_date ") => _statisticsFunction.TopicStatisticByDateAsync(message, cancellationToken),
+            { Text: "/channel_members" } => _channelFunction.ChannelMemberCountAsync(message, cancellationToken),
             { ReplyToMessage.Text: not null } => _groupChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ and {From.IsBot: false} => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
