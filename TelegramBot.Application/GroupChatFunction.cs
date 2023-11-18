@@ -6,7 +6,6 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBot.Application.Common;
 using TelegramBot.Application.Interfaces;
-using TelegramBot.Infrastructure.Domain;
 using TelegramBot.Infrastructure.Domain.Enums;
 using TelegramBot.Infrastructure.Interfaces;
 using File = System.IO.File;
@@ -52,7 +51,8 @@ public class GroupChatFunction : IGroupChatFunction
                        "/send - command to send a response to the user (use in topics), \n" +
                        "/close_topic - command to close a topic, use inside a topic, \n" +
                        "/topic_statistics - command to get statistics on topics, \n" +
-                       @"/topic_statistics_date ""dd-MM-yyyy"" - command to get statistics on topics by date, \n" +
+                       "/topic_statistics_date \"dd-MM-yyyy\" - command to get statistics on topics by date, \n" +
+                       "/channel_subscribes - command to get statistics on channel subscribers" +
                        "/ban username:reason - command to ban a user in a channel, \n" +
                        "/unban username - command to unban a user in a channel, \n" +
                        "/channel_members - command returned count of subscribers.";
@@ -216,7 +216,7 @@ public class GroupChatFunction : IGroupChatFunction
                 await _context.SaveChangesAsync(cancellationToken);
             }
             
-            Task.Delay(15000);   
+            await Task.Delay(15000);   
         }
         
         await _client.SendTextMessageAsync(chatId: message.Chat,

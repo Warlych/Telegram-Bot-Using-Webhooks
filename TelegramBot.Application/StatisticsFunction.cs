@@ -59,7 +59,7 @@ public class StatisticsFunction : IStatisticsFunction
         if (topics.Count == 0)
         {
             await _client.SendTextMessageAsync(chatId: groupId,
-                text: "There are no statistics for this period. Perhaps you should specify an earlier dateю",
+                text: "There are no statistics for this period. Perhaps you should specify an earlier date.",
                 cancellationToken: cancellationToken);
             
             return;
@@ -104,6 +104,53 @@ public class StatisticsFunction : IStatisticsFunction
             cancellationToken: cancellationToken);
     }
 
+    public async Task ChannelSubscribeStatisticAsync(Message message, CancellationToken cancellationToken)
+    {
+        var channelId = await Helper.GetChannelIdAsync();
+        var subscribes = _context.Subscribes
+            .Where(s => s.ChannelId == channelId)
+            .ToArray();
+
+        var model = new SubscribeStatisticModel()
+        {
+            Today = 0,
+            Month = 0,
+            ThreeMonth = 0
+        };
+        
+        foreach (var subscribe in subscribes)
+        {
+            if (DateTime.Now.ToUniversalTime().Date <= subscribe.EntryDate)
+            {
+                model.Today++;
+            }
+
+            if (DateTime.Today.AddMonths(-1).ToUniversalTime() <= subscribe.EntryDate)
+            {
+                model.Month++;
+            }
+
+            if (DateTime.Today.AddMonths(-3).ToUniversalTime() <= subscribe.EntryDate)
+            {
+                model.ThreeMonth++;
+            }
+        }
+        
+        await _client.SendTextMessageAsync(chatId: message.Chat,
+            text: $"Statistic for a {channelId}: \n" +
+                  $"Subscribe for today: {model.Today}\n" +
+                  $"Subscribe for month: {model.Month}\n" +
+                  $"Subscribe for three month: {model.ThreeMonth}\n",
+            cancellationToken: cancellationToken);
+    }
+
+    private class SubscribeStatisticModel
+    {
+        public int Today { get; set; }
+        public int Month { get; set; }
+        public int ThreeMonth { get; set; }
+    }
+    
     private class TopicStatisticModel
     {
         public int CountAsk { get; set; }

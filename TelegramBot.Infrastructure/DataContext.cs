@@ -14,6 +14,7 @@ public class DataContext : DbContext, IDataContext
         builder.Entity<Topic>().HasKey(t => t.TopicId);
         builder.Entity<Consumer>().HasKey(c => c.ConsumerId);
         builder.Entity<BanInfo>().HasKey(b => b.BanInfoId);
+        builder.Entity<GraphOfSubscribe>().HasKey(s => s.Id);
         
         builder.Entity<Topic>().HasMany(t => t.TopicActivies)
             .WithOne(a => a.Topic)
@@ -26,4 +27,5 @@ public class DataContext : DbContext, IDataContext
     public DbSet<Topic> Topics { get; set; }
     public DbSet<Consumer> Consumers { get; set; }
     public DbSet<BanInfo> Bans { get; set; }
+    public DbSet<GraphOfSubscribe> Subscribes { get; set; }
 }

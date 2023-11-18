@@ -69,6 +69,7 @@ public class UpdateHandlers
             { Message: { Chat.Type: ChatType.Group or ChatType.Supergroup } message } => BotOnGroupMessageReceiving(
                 message, cancellationToken),
             { ChannelPost: not null } => BotOnChannelUpdateReceiving(update, cancellationToken),
+            { Type: UpdateType.ChatMember } => BotOnNewChatMemberReceiving(update, cancellationToken),
             _ => UnknownUpdate(update, cancellationToken)
         };
 
@@ -114,6 +115,7 @@ public class UpdateHandlers
             { Text: var text } when text.StartsWith("/unban") => _channelFunction.UnbanUserAsync(message, cancellationToken),
             { Text: var text } when text.StartsWith("/topic_statistics_date ") => _statisticsFunction.TopicStatisticByDateAsync(message, cancellationToken),
             { Text: "/channel_members" } => _channelFunction.ChannelMemberCountAsync(message, cancellationToken),
+            { Text: "/channel_subscribes" } => _statisticsFunction.ChannelSubscribeStatisticAsync(message, cancellationToken),
             { ReplyToMessage.Text: not null } => _groupChatFunction.ReplyToBotMessageAsync(message, cancellationToken),
             _ and {From.IsBot: false} => _client.SendTextMessageAsync(message.Chat, "I didn't understand u")
         };
@@ -139,6 +141,26 @@ public class UpdateHandlers
 
         _logger.LogInformation("Command {@command} executed", func);
         await func;
+    }
+
+    private async Task BotOnNewChatMemberReceiving(Update update, CancellationToken cancellationToken)
+    {
+        var channelId = await Helper.GetChannelIdAsync();
+
+        if (update.ChatMember.Chat.Id == channelId && update.ChatMember.NewChatMember != null)
+        {
+            var newSubscribe = new GraphOfSubscribe()
+            {
+                Id = Guid.NewGuid(),
+                ChannelId = channelId,
+                EntryDate = DateTime.Now.ToUniversalTime(),
+            };
+            
+            _logger.LogInformation("New subscribe from {@user} in {channelId}", update.ChatMember.From, channelId);
+            
+            await _context.Subscribes.AddAsync(newSubscribe);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
     }
     
     private Task UnknownUpdate(Update update, CancellationToken cancellationToken)
